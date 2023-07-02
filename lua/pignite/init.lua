@@ -168,7 +168,7 @@ M.open_project = function(project_id)
 				return
 			end
 
-			local res = vim.system({ "onix", "new-list", project_id, input })
+			local res = vim.fn.system({ "onix", "new-list", project_id, input })
 			if not shell_error() then
 				local data = vim.json.decode(res)
 				local new_node = create_list_node(data, {})
@@ -199,7 +199,7 @@ M.open_project = function(project_id)
 			local parent_node = tree:get_node(parent_id)
 			local list_id = parent_node.real_id
 
-			local res = vim.system({ "onix", "new-list-item", list_id, input })
+			local res = vim.fn.system({ "onix", "new-list-item", list_id, input })
 			if not shell_error() then
 				local data = vim.json.decode(res)
 				local new_node = create_item_node(data)
@@ -222,7 +222,7 @@ M.open_project = function(project_id)
 
 			vim.ui.input({ prompt = "Are you sure (y/n)" }, function(input)
 				if input == "y" then
-					vim.system({ "onix", "delete-list", list_id })
+					vim.fn.system({ "onix", "delete-list", list_id })
 					if not shell_error() then
 						tree:remove_node(node:get_id())
 						tree:render()
@@ -237,7 +237,7 @@ M.open_project = function(project_id)
 			local item_id = node.real_id
 			vim.ui.input({ prompt = "Are you sure (y/n)" }, function(input)
 				if input == "y" then
-					vim.system({ "onix", "delete-list-item", item_id })
+					vim.fn.system({ "onix", "delete-list-item", item_id })
 					if not shell_error() then
 						tree:remove_node(node:get_id())
 						tree:render()
@@ -258,7 +258,7 @@ M.open_project = function(project_id)
 			local item_id = node.real_id
 			local updated = not node.done
 
-			vim.system({ "onix", "update-item", item_id, tostring(updated) })
+			vim.fn.system({ "onix", "update-item", item_id, tostring(updated) })
 			if not shell_error() then
 				node.done = not node.done
 				tree:render()
@@ -272,7 +272,7 @@ M.open_project = function(project_id)
 	popup:map("n", "r", function()
 		vim.schedule(function()
 			-- TODO(patrik): Smarter way to refresh the nodes
-			local s = vim.system({ "onix", "get-project", project_id })
+			local s = vim.fn.system({ "onix", "get-project", project_id })
 			project = vim.json.decode(s)
 			local nodes = get_nodes(project)
 			tree:set_nodes(nodes)
@@ -284,7 +284,7 @@ M.open_project = function(project_id)
 end
 
 M.pick_project = function()
-	local s = vim.system({ "onix", "get-all-projects" })
+	local s = vim.fn.system({ "onix", "get-all-projects" })
 	local projects = vim.json.decode(s)
 
 	if projects then
@@ -295,16 +295,18 @@ M.pick_project = function()
 			end,
 		}, function(choice)
 			if choice then
-				M.last_opened = choice
+				M.recent_opened = choice
 				M.open_project(choice.id)
 			end
 		end)
 	end
 end
 
-M.open_last_project = function()
-	if M.last_opened then
-		M.open_project(M.last_opened.id)
+M.open_recent_project = function()
+	if M.recent_opened then
+		M.open_project(M.recent_opened.id)
+	else
+		vim.notify("No recent project", vim.log.levels.ERROR)
 	end
 end
 
